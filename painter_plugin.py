@@ -1,10 +1,13 @@
 import json
 import os
 
+from PySide2 import QtWidgets
+
 import substance_painter.event
 import substance_painter.export
 import substance_painter.project
 import substance_painter.resource
+import substance_painter.ui
 import substance_painter.textureset
 
 BATCH_CONFIG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "maskscore.json")
@@ -91,14 +94,33 @@ def run_batch(mesh_path, reference_image=None, export_dir=None, on_written=None)
     open_garment(mesh_path, reference_image)
 
 
+_ACTION = None
+
+
+def _run_configured_batch():
+    config = batch_config()
+    if not config.get("mesh"):
+        print("texture-painter-maskscore idle: no mesh in %s" % BATCH_CONFIG)
+        return
+    run_batch(config["mesh"], config.get("reference_image"), config.get("export_dir"))
+
+
 def start_plugin():
-    # The batch does not run here: a project created at plugin-load time yields a
-    # document the API cannot query. Call run_batch() from the Python console.
-    print("texture-painter-maskscore ready: %s selects the batch" % BATCH_CONFIG)
+    """Add the menu action. The batch does not run here: a project created while
+    plugins load yields a document the API cannot query."""
+    global _ACTION
+    _ACTION = QtWidgets.QAction("MaskScore batch")
+    _ACTION.triggered.connect(_run_configured_batch)
+    menus = substance_painter.ui.ApplicationMenu
+    target = next(name for name in ("Python", "Window", "Edit", "File")
+                  if hasattr(menus, name))
+    substance_painter.ui.add_action(getattr(menus, target), _ACTION)
+    print("texture-painter-maskscore ready: %s > MaskScore batch" % target)
 
 
 def close_plugin():
-    pass
+    if _ACTION is not None:
+        substance_painter.ui.delete_ui_element(_ACTION)
 
 
 if __name__ == "__main__":
