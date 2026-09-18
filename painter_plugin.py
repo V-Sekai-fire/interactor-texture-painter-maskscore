@@ -1,16 +1,31 @@
+import json
 import os
 
+import substance_painter.event
 import substance_painter.export
 import substance_painter.project
 import substance_painter.resource
 import substance_painter.textureset
 
-MESH_ENV = "MASKSCORE_MESH"
-EXPORT_ENV = "MASKSCORE_EXPORT_DIR"
+BATCH_CONFIG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "maskscore.json")
 DEFAULT_EXPORT_DIR = os.path.join(os.path.expanduser("~"), "maskscore", "textures")
-DEFAULT_PRESET = substance_painter.resource.ResourceID(
-    context="starter_assets", name="PBR Metallic Roughness"
-)
+PRESET_NAME = "PBR Metallic Roughness"
+
+
+def batch_config(path=BATCH_CONFIG):
+    """Read the batch to run. Absent file means idle, which is how the tool opens by hand."""
+    if not os.path.exists(path):
+        return {}
+    with open(path) as handle:
+        return json.load(handle)
+
+
+def default_preset():
+    # Resolved on call: a ResourceID built at import time runs before the shelf
+    # is loaded.
+    return substance_painter.resource.ResourceID(
+        context="starter_assets", name=PRESET_NAME
+    )
 
 
 def open_garment(mesh_path, reference_image=None):
@@ -23,11 +38,12 @@ def open_garment(mesh_path, reference_image=None):
         )
 
 
-def export_textures(export_dir=None, preset=DEFAULT_PRESET):
+def export_textures(export_dir=None, preset=None):
     """Export every texture set of the open project under one preset."""
     if not substance_painter.project.is_open():
         raise RuntimeError("no project is open")
-    export_dir = export_dir or os.environ.get(EXPORT_ENV, DEFAULT_EXPORT_DIR)
+    preset = preset or default_preset()
+    export_dir = export_dir or DEFAULT_EXPORT_DIR
     os.makedirs(export_dir, exist_ok=True)
 
     config = {
@@ -48,18 +64,37 @@ def export_textures(export_dir=None, preset=DEFAULT_PRESET):
     return [path for paths in result.textures.values() for path in paths]
 
 
-def run_batch(mesh_path, reference_image=None, export_dir=None):
+def run_batch(mesh_path, reference_image=None, export_dir=None, on_written=None):
+    """Create the project, then export once it stops being busy.
+
+    Project creation is asynchronous: exporting straight after it raises
+    ValueError because the document is not there yet.
+    """
+    def _on_created(_event=None):
+        substance_painter.event.DISPATCHER.disconnect(
+            substance_painter.event.ProjectCreated, _on_created
+        )
+        substance_painter.project.execute_when_not_busy(_export)
+
+    def _export():
+        written = export_textures(export_dir)
+        for path in written:
+            print("texture-painter-maskscore wrote %s" % path)
+        if on_written:
+            on_written(written)
+
+    # Creation is asynchronous: ProjectCreated says the document exists, and the
+    # not-busy callback then waits for its texture sets to be built.
+    substance_painter.event.DISPATCHER.connect(
+        substance_painter.event.ProjectCreated, _on_created
+    )
     open_garment(mesh_path, reference_image)
-    return export_textures(export_dir)
 
 
 def start_plugin():
-    mesh = os.environ.get(MESH_ENV)
-    if not mesh:
-        print("texture-painter-maskscore idle: set %s to run a batch" % MESH_ENV)
-        return
-    for path in run_batch(mesh):
-        print("texture-painter-maskscore wrote %s" % path)
+    # The batch does not run here: a project created at plugin-load time yields a
+    # document the API cannot query. Call run_batch() from the Python console.
+    print("texture-painter-maskscore ready: %s selects the batch" % BATCH_CONFIG)
 
 
 def close_plugin():

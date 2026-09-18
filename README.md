@@ -14,7 +14,17 @@ path and an export preset rather than from a recorded click sequence.
 4. Score the exported maps with EditScore/MaskScore.
 
 ## Install
-Copy `painter_plugin.py` into the user plugin directory
-(`~/Documents/Adobe/Adobe Substance 3D Painter/python/plugins/`) and restart the
-application. `start_plugin` runs a batch when `MASKSCORE_MESH` names a mesh, and
-otherwise stays idle so opening the tool by hand does not start a run.
+Copy `painter_plugin.py` into `~/Documents/Adobe/Adobe Substance 3D Painter/python/startup/`
+and restart the application. Modules under `plugins/` are enabled by hand in the UI;
+modules under `startup/` always load.
+
+`maskscore.json` beside the module selects the batch:
+
+    {"mesh": "/path/garment.obj", "export_dir": "/path/textures"}
+
+## The batch does not run at load
+`start_plugin` only reports that it is ready. A project created while plugins are
+loading yields a document the API cannot query — `all_texture_sets()` raises
+`ValueError: Failed to get the document`, and chaining `ProjectCreated` and
+`execute_when_not_busy` does not change it, because the application is not up yet.
+Call `run_batch()` from the Python console once the application has started.
