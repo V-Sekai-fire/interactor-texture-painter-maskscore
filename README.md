@@ -22,9 +22,14 @@ modules under `startup/` always load.
 
     {"mesh": "/path/garment.obj", "export_dir": "/path/textures"}
 
-## The batch does not run at load
-`start_plugin` only reports that it is ready. A project created while plugins are
-loading yields a document the API cannot query — `all_texture_sets()` raises
-`ValueError: Failed to get the document`, and chaining `ProjectCreated` and
-`execute_when_not_busy` does not change it, because the application is not up yet.
-Call `run_batch()` from the Python console once the application has started.
+## The batch runs from a menu action
+`start_plugin` registers **Window > MaskScore batch** and nothing else. A project
+created while plugins are loading yields a document the API cannot query —
+`all_texture_sets()` raises `ValueError: Failed to get the document`, and chaining
+`ProjectCreated` with `execute_when_not_busy` does not change it, because the
+application is not up yet. Choosing the action once it is up runs the batch against
+`maskscore.json`.
+
+`exportParameters` must set `paddingAlgorithm`. Without it the export fails at
+parameter evaluation with `padding algorithm could not be resolved`, per map, after
+the project has already been built.

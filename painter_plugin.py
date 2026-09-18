@@ -58,7 +58,8 @@ def export_textures(export_dir=None, preset=None):
             for texture_set in substance_painter.textureset.all_texture_sets()
         ],
         "exportParameters": [
-            {"parameters": {"fileFormat": "png", "bitDepth": "8", "dithering": True}}
+            {"parameters": {"fileFormat": "png", "bitDepth": "8", "dithering": True,
+                            "paddingAlgorithm": "infinite"}}
         ],
     }
     result = substance_painter.export.export_project_textures(config)
