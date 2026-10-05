@@ -1,6 +1,6 @@
 # interactor-texture-painter-maskscore
 
-A texture-painting application plugin that paints a garment mesh and exports its map set, so MaskScore and EditScore score textures rather than flat renders.
+A texture-painting plugin that paints a garment mesh and exports its maps, so MaskScore and EditScore score textures, not flat renders.
 
 ## What it is for
 
