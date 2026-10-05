@@ -1,35 +1,15 @@
-# Texture Painter MaskScore
+# interactor-texture-painter-maskscore
 
-Paints a garment mesh in the texture-painting tool and exports its map set, so MaskScore and EditScore score textures rather than flat renders.
+A texture-painting application plugin that paints a garment mesh and exports its map set, so MaskScore and EditScore score textures rather than flat renders.
 
-## Purpose
-Turn the meshes produced upstream into MaskScore/EditScore texture datasets. The
-plugin drives the painting tool's Python API, so a run is reproducible from a mesh
-path and an export preset rather than from a recorded click sequence.
+## What it is for
 
-## Workflow
-1. Create a project from a garment mesh.
-2. Import the reference image as a project resource.
-3. Export the texture set under a named preset.
-4. Score the exported maps with EditScore/MaskScore.
+The plugin drives the painting application's Python API, so a run is reproducible from a mesh path and an export preset rather than from recorded clicks. It creates a project from the mesh, imports the reference image, exports the texture set under a named preset, and leaves the maps for scoring.
 
-## Install
-Copy `painter_plugin.py` into `~/Documents/Adobe/Adobe Substance 3D Painter/python/startup/`
-and restart the application. Modules under `plugins/` are enabled by hand in the UI;
-modules under `startup/` always load.
+## Install and run
 
-`maskscore.json` beside the module selects the batch:
+Copy `painter_plugin.py` into the application's Python `startup` folder and restart the application. A `maskscore.json` beside the module names the mesh and the export folder, and the batch runs from the menu action the plugin registers once the application is up.
 
-    {"mesh": "/path/garment.obj", "export_dir": "/path/textures"}
+## Licence
 
-## The batch runs from a menu action
-`start_plugin` registers **Window > MaskScore batch** and nothing else. A project
-created while plugins are loading yields a document the API cannot query —
-`all_texture_sets()` raises `ValueError: Failed to get the document`, and chaining
-`ProjectCreated` with `execute_when_not_busy` does not change it, because the
-application is not up yet. Choosing the action once it is up runs the batch against
-`maskscore.json`.
-
-`exportParameters` must set `paddingAlgorithm`. Without it the export fails at
-parameter evaluation with `padding algorithm could not be resolved`, per map, after
-the project has already been built.
+The licence is not stated.
