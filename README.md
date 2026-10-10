@@ -12,4 +12,4 @@ Copy `painter_plugin.py` into the application's Python `startup` folder and rest
 
 ## Licence
 
-The licence is not stated.
+MIT. See [LICENSE](LICENSE).
